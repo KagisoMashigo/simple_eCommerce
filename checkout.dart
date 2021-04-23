@@ -26,12 +26,15 @@ class Item {
   final int quantity;
 
   double get price => quantity * product.price;
+
+  @override
+  String toString() => '$quantity x ${product.name}: \$$price';
 }
 
 class Cart {
   final Map<int, Item> _items = {};
 
-  void addProduct(Product, product) {
+  void addProduct(product) {
     final item = _items[product.id];
     if (item == null) {
       _items[product.id] = Item(product: product, quantity: 1);
@@ -40,12 +43,21 @@ class Cart {
     }
   }
 
+  double total() => _items.values
+      .map((item) => item.price)
+      .reduce((value, element) => value + element);
+
   @override
   String toString() {
     if (_items.isEmpty) {
       print('cart be empty bruv');
     }
+    final itemizedList =
+        _items.values.map((item) => item.toString()).join('\n');
+    return '------\n$itemizedList\nTotal: \$${total()}\n------';
   }
+
+  bool get isEmpty => _items.isEmpty;
 }
 
 Product? chooseProduct() {
@@ -62,7 +74,34 @@ Product? chooseProduct() {
   return null;
 }
 
+bool checkout(Cart cart) {
+  if (cart.isEmpty) {
+    print('cart is empty yo');
+    return false;
+  }
+  final total = cart.total();
+  print('Total: \$$total');
+  stdout.write('Payment in cash: ');
+  final line = stdin.readLineSync();
+  if (line == null || line.isEmpty) {
+    return false;
+  }
+  final paid = double.tryParse(line);
+  if (paid == null) {
+    return false;
+  }
+  if (paid >= total) {
+    final change = paid - total;
+    print('Change: \$${change.toStringAsFixed(2)}');
+    return true;
+  } else {
+    print('Not enough cash home slice');
+    return false;
+  }
+}
+
 void main() {
+  final cart = Cart();
   while (true) {
     stdout.write(
         "What would you like to do? (v)iew items, (a)dd items, or (c)heckout: ");
@@ -70,19 +109,16 @@ void main() {
     if (line == 'a') {
       final product = chooseProduct();
       if (product != null) {
-        print(product.displayName);
+        cart.addProduct(product);
+        print(cart);
       }
     }
     if (line == 'v') {
-      final product = chooseProduct();
-      if (product != null) {
-        print(product.displayName);
-      }
+        print(cart);
     }
     if (line == 'c') {
-      final product = chooseProduct();
-      if (product != null) {
-        print(product.displayName);
+      if (checkout(cart)) {
+        break;
       }
     }
   }
